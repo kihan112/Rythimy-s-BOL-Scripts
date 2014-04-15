@@ -1,3 +1,5 @@
+local version = "1.00"
+local AUTOUPDATE = true
 if not VIP_USER then
   PrintChat("Unstoppable Series is for vip only.")
   return
@@ -35,16 +37,19 @@ end
 
 if DOWNLOADING_LIBS then print("Downloading required libraries...") return end
 
+if AUTOUPDATE then
+     LazyUpdater("Unstoppable Zed", version, "raw.githubusercontent.com", "kihan112/Rythimy-s-BOL-Scripts/master/Unstoppable%20Zed.lua", SCRIPT_PATH .. GetCurrentEnv().FILE_NAME):SetSilent(false):CheckUpdate()
+end
 
 function OnLoad()
   LoadVars()
   LoadMenu()
-  PrintChat("<font color='#0000FF'> >> Unstoppable Zed V1.0 Loaded! <<</font>")
+  PrintChat("<font color='#0000FF'> >> Unstoppable Zed V" .. version .. " Loaded! <<</font>")
 end
 
 function LoadMenu()
 
-  Menu = scriptConfig("Unstoppable Zed by Rythimy V1.0", "Unstoppable Zed")
+  Menu = scriptConfig("Unstoppable Zed by Rythimy V" .. version, "Unstoppable Zed")
   
   Menu:addSubMenu("Target selector", "STS")
   STS:AddToMenu(Menu.STS)
