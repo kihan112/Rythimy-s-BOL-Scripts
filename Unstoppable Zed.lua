@@ -1,4 +1,4 @@
-local version = "1.00"
+local version = "1.01"
 local AUTOUPDATE = true
 if not VIP_USER then
   PrintChat("Unstoppable Series is for vip only.")
@@ -82,7 +82,7 @@ function LoadMenu()
     Menu.mitems:permaShow("itemsOptions")
     
   Menu:addSubMenu("Zed - Drawing Settings", "drawing")  
-    DamageManager:AddToMenu(Menu.drawing, {_R, _Q, _E, _P, _AA, _IGNITE})
+    DamageManager:AddToMenu(Menu.drawing, {_R, 3153, _E, _Q, _AA, _P, _IGNITE})
     QrangeCircle:AddToMenu(Menu.drawing, "Draw Q Range", true, true, true)
     WrangeCircle:AddToMenu(Menu.drawing, "Draw W Range", true, true, true)
     ErangeCircle:AddToMenu(Menu.drawing, "Draw E Range", true, true, true)
@@ -96,6 +96,7 @@ function LoadVars()
   
   wObj, rObj = nil, nil
   wUsed = false
+  Ulted = false
   
   colorText = ARGB(255,0,255,0)
 
@@ -126,7 +127,7 @@ function LoadVars()
     
   DamageManager:RegisterDamageSource(_P, _MAGIC, 0, 0, _MAGIC, _AP, 0, function() return true end, function(target) if not HasBuff(target, "zedpassivecd") then return 0.08 * target.maxHealth else return 0 end end)
    
-  DamageManager:RegisterDamageSource(_R, _PHYSICAL, 0, 0, _PHYSICAL, _AD, 1.0, function() return ((player:CanUseSpell(_R) == READY) and (myHero:GetSpellData(_R).name ~= "ZedR2")) end, function(target) return (0.05 + (player:GetSpellData(_R).level * 0.15)) * (DamageManager:CalcComboDamage(target, {_Q, _E, _P, _AA})) end)
+  DamageManager:RegisterDamageSource(_R, _PHYSICAL, 0, 0, _PHYSICAL, _AD, 1.0, function() return ((player:CanUseSpell(_R) == READY) and (myHero:GetSpellData(_R).name ~= "ZedR2")) end, function(target) return (0.05 + (player:GetSpellData(_R).level * 0.15)) * (DamageManager:CalcComboDamage(target, {_E, 3153, _Q, _AA, _P})) end)
 
   end
   
@@ -192,7 +193,7 @@ function DoCombo()
       end
     end
     
-    if DamageManager:IsKillable(target, {_R, _Q, _E, _P, _AA, _IGNITE}) then
+    if DamageManager:IsKillable(target, {_R, 3153, _E, _Q, _AA, _P, _IGNITE}) then
       if rReady and (Menu.combo.rMode == 3) then
         if myHero:GetSpellData(_R).name ~= "ZedR2" then
           if (GetDistance(target) < 625) then
@@ -217,26 +218,29 @@ function DoCombo()
         end
       end      
     end
-  if Menu.combo.wMode == 1 then
-    if wReady and not wUsed then
-      if not CastWFORE() and GetDistance(target) > 750 then
-        CastW()
-      end
+    if Ulted then
+      CastItems()
     end
-  else
-    if GetDistance(target) > 280 then
+    if Menu.combo.wMode == 1 then
       if wReady and not wUsed then
         if not CastWFORE() and GetDistance(target) > 750 then
           CastW()
         end
       end
+    else
+      if GetDistance(target) > 280 then
+        if wReady and not wUsed then
+          if not CastWFORE() and GetDistance(target) > 750 then
+            CastW()
+          end
+        end
+      end
+    end
+    if (not wUsed and not wReady) or (not wUsed and GetDistance(target) > 280) or (wUsed and wObj ~= nil and wObj.valid) then
+      CastE()
+      CastQ()
     end
   end
-  if (not wUsed and not wReady) or (not wUsed and GetDistance(target) > 280) or (wUsed and wObj ~= nil and wObj.valid) then
-    CastE()
-    CastQ()
-  end
-end
   DoSwap()
 end
 
@@ -361,12 +365,13 @@ function CastItems()
 end
 
 function RenewVars()
-
+  Ulted = false
   target = nil
   for i = 1, heroManager.iCount, 1 do
     local enemyhero = heroManager:getHero(i)
     if enemyhero.team ~= myHero.team and ValidTarget(enemyhero, 1400) and HasBuff(enemyhero, "zedulttargetmark") then        
       target = enemyhero
+      Ulted = true
     end
   end
   if target == nil then
