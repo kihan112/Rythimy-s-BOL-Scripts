@@ -1,4 +1,4 @@
-local version = "1.01"
+local version = 1.02
 local AUTOUPDATE = true
 if not VIP_USER then
   PrintChat("Unstoppable Series is for vip only.")
@@ -44,12 +44,12 @@ end
 function OnLoad()
   LoadVars()
   LoadMenu()
-  PrintChat("<font color='#0000FF'> >> Unstoppable Zed V" .. version .. " Loaded! <<</font>")
+  PrintChat("<font color='#0000FF'> >> Unstoppable Zed V" .. tostring(version) .. " Loaded! <<</font>")
 end
 
 function LoadMenu()
 
-  Menu = scriptConfig("Unstoppable Zed by Rythimy V" .. version, "Unstoppable Zed")
+  Menu = scriptConfig("Unstoppable Zed by Rythimy V" .. tostring(version), "Unstoppable Zed")
   
   Menu:addSubMenu("Target selector", "STS")
   STS:AddToMenu(Menu.STS)
