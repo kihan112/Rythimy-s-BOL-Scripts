@@ -1,5 +1,6 @@
-local version = 1.02
+local version = "1.03"
 local AUTOUPDATE = true
+
 if not VIP_USER then
   PrintChat("Unstoppable Series is for vip only.")
   return
@@ -37,8 +38,31 @@ end
 
 if DOWNLOADING_LIBS then print("Downloading required libraries...") return end
 
+local UPDATE_NAME = "Unstoppable Zed"
+local UPDATE_HOST = "raw.githubusercontent.com"
+local UPDATE_PATH = "kihan112/Rythimy-s-BOL-Scripts/master/Unstoppable%20Zed.lua"
+local UPDATE_FILE_PATH = SCRIPT_PATH..GetCurrentEnv().FILE_NAME
+local UPDATE_URL = "https://"..UPDATE_HOST..UPDATE_PATH
+
+function AutoupdaterMsg(msg) print("<font color=\"#6699ff\"><b>Unstoppable Zed:</b></font> <font color=\"#FFFFFF\">"..msg..".</font>") end
 if AUTOUPDATE then
-     LazyUpdater("Unstoppable Zed", version, "raw.githubusercontent.com", "kihan112/Rythimy-s-BOL-Scripts/master/Unstoppable%20Zed.lua", SCRIPT_PATH .. GetCurrentEnv().FILE_NAME):SetSilent(false):CheckUpdate()
+    local ServerData = GetWebResult(UPDATE_HOST, UPDATE_PATH)
+    if ServerData then
+        local ServerVersion = string.match(ServerData, "local version = \"%d+.%d+\"")
+        ServerVersion = string.match(ServerVersion and ServerVersion or "", "%d+.%d+")
+        if ServerVersion then
+            ServerVersion = tonumber(ServerVersion)
+            if tonumber(version) < ServerVersion then
+                AutoupdaterMsg("New version available"..ServerVersion)
+                AutoupdaterMsg("Updating, please don't press F9")
+                DelayAction(function() DownloadFile(UPDATE_URL, UPDATE_FILE_PATH, function () AutoupdaterMsg("Successfully updated. ("..version.." => "..ServerVersion.."), press F9 twice to load the updated version.") end) end, 3)
+            else
+                AutoupdaterMsg("You have got the latest version ("..ServerVersion..")")
+            end
+        end
+    else
+        AutoupdaterMsg("Error downloading version info")
+    end
 end
 
 function OnLoad()
