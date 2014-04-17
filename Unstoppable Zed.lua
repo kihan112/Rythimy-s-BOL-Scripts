@@ -1,4 +1,4 @@
-local version = "1.03"
+local version = "1.04"
 local AUTOUPDATE = true
 
 if not VIP_USER then
@@ -291,7 +291,7 @@ function DoHarass()
         CastW()
       end
     end
-    if (not wUsed and not wReady and Menu.harass.wMode == 1) or (wUsed and wObj ~= nil and wObj.valid) then
+    if (not wUsed and not wReady) or (not wUsed and Menu.harass.wMode == 1) or (wUsed and wObj ~= nil and wObj.valid) then
       CastE()
       CastQ()
     end
