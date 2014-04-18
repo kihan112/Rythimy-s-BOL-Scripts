@@ -1,4 +1,4 @@
-local version = "1.04"
+local version = "1.05"
 local AUTOUPDATE = true
 
 if not VIP_USER then
@@ -247,16 +247,16 @@ function DoCombo()
     end
     if Menu.combo.wMode == 1 then
       if wReady and not wUsed then
-        if not CastWFORE() and GetDistance(target) > 750 then
+        --if not CastWFORE() and GetDistance(target) > 750 then
           CastW()
-        end
+        --end
       end
     else
       if GetDistance(target) > 280 then
         if wReady and not wUsed then
-          if not CastWFORE() and GetDistance(target) > 750 then
+          --if not CastWFORE() and GetDistance(target) > 750 then
             CastW()
-          end
+          --end
         end
       end
     end
