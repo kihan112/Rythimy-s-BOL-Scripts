@@ -1,4 +1,4 @@
-local version = "1.05"
+local version = "1.06"
 local AUTOUPDATE = true
 
 if not VIP_USER then
@@ -8,9 +8,9 @@ end
 if myHero.charName ~= "Zed" then return end
 
 local REQUIRED_LIBS = {
-        ["VPrediction"] = "https://bitbucket.org/honda7/bol/raw/master/Common/VPrediction.lua",
-        ["SOW"] = "https://bitbucket.org/honda7/bol/raw/master/Common/SOW.lua",
-        ["SourceLib"] = "https://bitbucket.org/TheRealSource/public/raw/master/common/SourceLib.lua",
+        ["VPrediction"] = "https://raw.githubusercontent.com/honda7/BoL/master/Common/VPrediction.lua",
+        ["SOW"] = "https://raw.githubusercontent.com/honda7/BoL/master/Common/SOW.lua",
+        ["SourceLib"] = "https://raw.githubusercontent.com/TheRealSource/public/master/common/SourceLib.lua",
     }
 
 local DOWNLOADING_LIBS, DOWNLOAD_COUNT = false, 0
@@ -85,13 +85,14 @@ function LoadMenu()
   Menu:addSubMenu("Zed - Combo Settings", "combo")
     Menu.combo:addParam("combo", "Full Combo", SCRIPT_PARAM_ONKEYDOWN, false, 32)
     Menu.combo:addParam("rMode", "Ult settings", SCRIPT_PARAM_LIST, 3, {"Don't use", "Use always", "Use when killable"})
-    Menu.combo:addParam("wMode", "W settings", SCRIPT_PARAM_LIST, 2, {"Use always", "Use when enemy is out of range"})
+    Menu.combo:addParam("wMode", "W settings", SCRIPT_PARAM_LIST, 2, {"Use always", "Use when enemy is out of range"})  
     Menu.combo:permaShow("combo")
   
     
   Menu:addSubMenu("Zed - Harass Settings", "harass")
     Menu.harass:addParam("harass", "Harass", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("C"))
     Menu.harass:addParam("wMode", "W settings", SCRIPT_PARAM_LIST, 3, {"Don't use", "Use always", "Use when WE is hittable"})
+    Menu.harass:addParam("wPredict", "Use Vprediction for casting W", SCRIPT_PARAM_ONOFF, true)
     Menu.harass:permaShow("harass")
   
   --Menu:addSubMenu("Zed - Killsteal Settings", "ks")
@@ -284,12 +285,24 @@ end
 
 function DoHarass()
   if ValidTarget(target) then
-    if (Menu.harass.wMode == 3) and (qReady or eReady) and (not wUsed) and wReady then
-      CastWFORE()
-    elseif (Menu.harass.wMode == 2) and (qReady or eReady) and (not wUsed) and wReady then
-      if not CastWFORE() and GetDistance(target) > 750 then
-        CastW()
+    if Menu.harass.wPredict then
+      if (Menu.harass.wMode == 3) and (qReady or eReady) and (not wUsed) and wReady then
+        CastWFORE()
+      elseif (Menu.harass.wMode == 2) and (qReady or eReady) and (not wUsed) and wReady then
+        if not CastWFORE() and GetDistance(target) > 750 then
+          CastW()
+        end
       end
+    else
+      if (Menu.harass.wMode == 3) and (qReady or eReady) and (not wUsed) and wReady then
+        if not CastWToTarget() and GetDistance(target) < 750 then
+          CastW()
+        end
+      elseif (Menu.harass.wMode == 2) and (qReady or eReady) and (not wUsed) and wReady then
+        if not CastWToTarget() then
+          CastW()
+        end
+      end   
     end
     if (not wUsed and not wReady) or (not wUsed and Menu.harass.wMode == 1) or (wUsed and wObj ~= nil and wObj.valid) then
       CastE()
@@ -359,8 +372,15 @@ function CastWFORE()
   return false
 end
 
-function CastW()
+function CastWToTarget()
+  if wReady and (myHero:GetSpellData(_W).name ~= "zedw2") and ValidTarget(target, 550) then
+    CastSpell(_W, target.x, target.z)  
+    return true
+  end
+  return false
+end
 
+function CastW()
   if wReady and (myHero:GetSpellData(_W).name ~= "zedw2") and ValidTarget(target) then
     local MaxEndPosition = myHero + Vector(target.x - myHero.x, 0, target.z - myHero.z):normalized()*550
     CastSpell(_W, MaxEndPosition.x, MaxEndPosition.z)  
