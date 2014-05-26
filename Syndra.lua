@@ -1,6 +1,6 @@
 if myHero.charName ~= "Syndra" then return end
 
-local version = 1.00
+local version = 1.01
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Syndra"
 
@@ -25,8 +25,8 @@ if AUTOUPDATE then
 end
 
 local RequireI = Require("SourceLib")
-RequireI:Add("vPrediction", "https://raw.github.com/honda7/BoL/master/Common/VPrediction.lua")
-RequireI:Add("SOW", "https://raw.github.com/honda7/BoL/master/Common/SOW.lua")
+RequireI:Add("vPrediction", "https://raw.githubusercontent.com/Hellsing/BoL/master/common/VPrediction.lua")
+RequireI:Add("SOW", "https://raw.githubusercontent.com/Hellsing/BoL/master/common/SOW.lua")
 RequireI:Check()
 
 if RequireI.downloadNeeded == true then return end
@@ -389,7 +389,7 @@ function OnCastQ(spell)
 	local BallInfo = {
 						added = false, 
 						object = {valid = true, x = spell.endPos.x, y = myHero.y, z = spell.endPos.z},
-						startT = os.clock() + Q.delay,
+						startT = os.clock() + Q.delay - E.delay,
 						StartT2 = os.clock() + Q.delay,
 						endT = os.clock() + BallDuration + 1 - GetLatency()/2000
 					 }
@@ -462,7 +462,7 @@ end
 function Cast2Q(target)
 	if not Q:IsReady() then return end
 	if GetDistanceSqr(target) > Q.rangeSqr then
-		EQ.delay = Q.delay + E.delay
+		EQ.delay = Q.delay
 		local spos = Vector(myHero.visionPos) + Menu.EQ.Range * (Vector(target) - Vector(myHero.visionPos)):normalized()
 		EQ:SetSource(spos)
 
