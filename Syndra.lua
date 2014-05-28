@@ -1,6 +1,6 @@
 if myHero.charName ~= "Syndra" then return end
 
-local version = 1.01
+local version = 1.02
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Syndra"
 
@@ -27,6 +27,7 @@ end
 local RequireI = Require("SourceLib")
 RequireI:Add("vPrediction", "https://raw.githubusercontent.com/Hellsing/BoL/master/common/VPrediction.lua")
 RequireI:Add("SOW", "https://raw.githubusercontent.com/Hellsing/BoL/master/common/SOW.lua")
+RequireI:Add("Selector", "https://raw.githubusercontent.com/pqmailer/BoL_Scripts/master/Paid/Selector.lua")
 RequireI:Check()
 
 if RequireI.downloadNeeded == true then return end
@@ -35,7 +36,7 @@ if RequireI.downloadNeeded == true then return end
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-local MainCombo = {ItemManager:GetItem("DFG"):GetId(), _Q, _W, _E, _R, _R, _R, _IGNITE}
+local MainCombo = {ItemManager:GetItem("DFG"):GetId(), _W, _E, _R, _R, _R, _IGNITE}
 local _QE = 1337
 
 --SpellData
@@ -59,9 +60,9 @@ local DontUseRTime = 0
 local UseRTime = 0
 
 function OnLoad()
+	Selector.Instance() 
 	VP = VPrediction()
 	SOWi = SOW(VP)
-	STS = SimpleTS(STS_PRIORITY_LESS_CAST_MAGIC)
 	DLib = DamageLib()
 	DManager = DrawManager()
 
@@ -94,6 +95,7 @@ function OnLoad()
 	W:SetAOE(true)
 
 	DLib:RegisterDamageSource(_Q, _MAGIC, 30, 40, _MAGIC, _AP, 0.60, function() return (player:CanUseSpell(_Q) == READY) end)--Without the 15% increase at rank 5
+	DLib:RegisterDamageSource(_LV5Q, _MAGIC, 264.5, 0, _MAGIC, _AP, 0.69, function() return (player:CanUseSpell(_Q) == READY) end)--With the 15% increase at rank 5
 	DLib:RegisterDamageSource(_W, _MAGIC, 40, 40, _MAGIC, _AP, 0.70, function() return (player:CanUseSpell(_W) == READY) end)
 	DLib:RegisterDamageSource(_E, _MAGIC, 25, 45, _MAGIC, _AP, 0.4, function() return (player:CanUseSpell(_E) == READY) end)--70 / 115 / 160 / 205 / 250 (+ 40% AP)
 	DLib:RegisterDamageSource(_R, _MAGIC, 45, 45, _MAGIC, _AP, 0.2, function() return (player:CanUseSpell(_R) == READY) end)--1 sphere
@@ -102,9 +104,6 @@ function OnLoad()
 
 	Menu:addSubMenu("Orbwalking", "Orbwalking")
 		SOWi:LoadToMenu(Menu.Orbwalking)
-
-	Menu:addSubMenu("Target selector", "STS")
-		STS:AddToMenu(Menu.STS)
 
 	Menu:addSubMenu("Combo", "Combo")
 		Menu.Combo:addParam("UseQ", "Use Q", SCRIPT_PARAM_ONOFF, true)
@@ -187,6 +186,11 @@ function GetCombo()
 	for i, spell in ipairs(MainCombo) do
 		table.insert(result, spell)
 	end
+	if Q:GetLevel() == 5 then
+		table.insert(result, _LV5Q)
+	else
+		table.insert(result, _Q)
+	end
 	for i = 1, #GetValidBalls() do
 		table.insert(result, _R)
 	end
@@ -194,16 +198,28 @@ function GetCombo()
 end
 
 --Track the balls :p
-function GetValidBalls(all)
-	local result = {}
-	for i, ball in ipairs(Balls) do
-		if (ball.added or ball.startT <= os.clock()) and Balls[i].endT >= os.clock() and ball.object.valid then
-			if not WObject or ball.object.networkID ~= WObject.networkID then
-				table.insert(result, ball)
+function GetValidBalls(ForE)
+	if (ForE == nil) or (ForE == false) then
+		local result = {}
+		for i, ball in ipairs(Balls) do
+			if (ball.added or ball.startT <= os.clock()) and Balls[i].endT >= os.clock() and ball.object.valid then
+				if not WObject or ball.object.networkID ~= WObject.networkID then
+					table.insert(result, ball)
+				end
 			end
 		end
+		return result
+	else
+		local result = {}
+		for i, ball in ipairs(Balls) do
+			if (ball.added or ball.startT <= os.clock() + (E.delay + GetDistance(myHero.visionPos, ball.object) / E.speed)) and Balls[i].endT >= os.clock() + (E.delay + GetDistance(myHero.visionPos, ball.object) / E.speed) and ball.object.valid then
+				if not WObject or ball.object.networkID ~= WObject.networkID then
+					table.insert(result, ball)
+				end
+			end
+		end
+		return result
 	end
-	return result
 end
 
 function AddBall(obj)
@@ -389,9 +405,8 @@ function OnCastQ(spell)
 	local BallInfo = {
 						added = false, 
 						object = {valid = true, x = spell.endPos.x, y = myHero.y, z = spell.endPos.z},
-						startT = os.clock() + Q.delay - E.delay,
-						StartT2 = os.clock() + Q.delay,
-						endT = os.clock() + BallDuration + 1 - GetLatency()/2000
+						startT = os.clock() + Q.delay - GetLatency()/2000,
+						endT = os.clock() + BallDuration + Q.delay - GetLatency()/2000
 					 }
 	if os.clock() - QECombo < 1.5 then
 		local Delay = Q.delay - (E.delay + GetDistance(myHero.visionPos, BallInfo.object) / E.speed)
@@ -416,10 +431,10 @@ function CastQE2(BallInfo)
 					local SP = Vector(BallInfo.object) - 100 * (Vector(BallInfo.object) - Vector(myHero.visionPos)):normalized()
 					local pointSegment, pointLine, isOnSegment = VectorPointProjectionOnLineSegment(SP, EP, enemyPos)
 					if isOnSegment and GetDistanceSqr(pointLine, enemyPos) <= (Widths[_QE] + VP:GetHitBox(enemy))^2 then
-						if (E.delay + GetDistance(myHero.visionPos, BallInfo.object) / E.speed) >= (BallInfo.StartT2 - os.clock()) then
+						if (E.delay + GetDistance(myHero.visionPos, BallInfo.object) / E.speed) >= (BallInfo.startT - os.clock()) then
 							CastSpell(_E, BallInfo.object.x, BallInfo.object.z)
 						else
-							DelayAction(function(t) CastQE3(t) end, BallInfo.StartT2 - os.clock() - (E.delay + GetDistance(myHero.visionPos, BallInfo.object) / E.speed), {BallInfo})	
+							DelayAction(function(t) CastQE3(t) end, BallInfo.startT - os.clock() - (E.delay + GetDistance(myHero.visionPos, BallInfo.object) / E.speed), {BallInfo})	
 						end				
 					end
 				end
@@ -430,10 +445,10 @@ end
 
 
 function CastQE3(BallInfo)
-	if (E.delay + GetDistance(myHero.visionPos, BallInfo.object) / E.speed) >= (BallInfo.StartT2 - os.clock()) then
+	if (E.delay + GetDistance(myHero.visionPos, BallInfo.object) / E.speed) >= (BallInfo.startT - os.clock()) then
 		CastSpell(_E, BallInfo.object.x, BallInfo.object.z)
 	else
-		DelayAction(function(t) CastQE3(t) end, BallInfo.StartT2 - os.clock() - (E.delay + GetDistance(myHero.visionPos, BallInfo.object) / E.speed), {BallInfo})	
+		DelayAction(function(t) CastQE3(t) end, BallInfo.startT - os.clock() - (E.delay + GetDistance(myHero.visionPos, BallInfo.object) / E.speed), {BallInfo})	
 	end				
 end
 
@@ -480,16 +495,17 @@ function Cast2Q(target)
 end
 
 function UseSpells(UseQ, UseW, UseE, UseEQ, UseR)
-	local Qtarget = STS:GetTarget(W.range)
-	local QEtarget = STS:GetTarget(QERange)
-	local Rtarget = STS:GetTarget(R.range)
+
+	local Qtarget = Selector.GetTarget(SelectorMenu.Get().mode, 'AP', {distance = W.range})
+	local QEtarget = Selector.GetTarget(SelectorMenu.Get().mode, 'AP', {distance = QERange})
+	local Rtarget = Selector.GetTarget(SelectorMenu.Get().mode, 'AP', {distance = R.range})
 	local DFGUsed = false
 
 	if (os.clock() - DontUseRTime < 10) then
 		UseR = false
 	end
 
-	if UseW then
+	if UseW and W:IsReady() then
 		if Qtarget and W.status == 1 and (os.clock() - Q:GetLastCastTime() > 0.25) and (os.clock() - E:GetLastCastTime() > 0.25) then
 			if WObject.charName == nil or WObject.charName:lower() ~= "heimertblue" then --Don't throw the giant tower :D
 				W:Cast(Qtarget)
@@ -513,7 +529,7 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR)
 		--end
 	end
 
-	if UseQ then
+	if UseQ and Q:IsReady() then
 		if Qtarget and os.clock() - W:GetLastCastTime() > 0.25 and os.clock() - E:GetLastCastTime() > 0.25 then
 			VP.ShotAtMaxRange = true
 			Q:Cast(Qtarget)
@@ -533,9 +549,9 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR)
 		end
 	end
 
-	if UseE then
+	if UseE and E:IsReady() then
 		--Check to stun people with E
-		local validballs = GetValidBalls()
+		local validballs = GetValidBalls(true)
 		for i, enemy in ipairs(GetEnemyHeroes()) do
 			if ValidTarget(enemy) then
 				local tmp1, tmp2, enemyPos = VP:GetPredictedPos(enemy, 0.25, QESpeed, myHero.visionPos, false)
@@ -762,6 +778,7 @@ function Harass()
 end
 
 function OnTick()
+	DLib.combo = GetCombo()
 	DrawJungleStealingIndicator = false
 	BTOnTick()
 	SOWi:EnableAttacks()
@@ -781,13 +798,6 @@ function OnTick()
 
 	if Menu.JungleFarm.Enabled then
 		JungleFarm()
-	end
-
-	if Menu.R.UseR then
-		local Rtarget = STS:GetTarget(R.range)
-		if Rtarget then
-			R:Cast(Rtarget)
-		end
 	end
 
 	if Menu.Misc.WPet then
