@@ -1,8 +1,9 @@
 if myHero.charName ~= "Syndra" then return end
 
-local version = 1.02
+local version = 1.03
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Syndra"
+local ForceUseSimpleTS = false
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -59,8 +60,7 @@ local EQCombo = 0
 local DontUseRTime = 0
 local UseRTime = 0
 
-function OnLoad()
-	Selector.Instance() 
+function OnLoad()	
 	VP = VPrediction()
 	SOWi = SOW(VP)
 	DLib = DamageLib()
@@ -104,6 +104,17 @@ function OnLoad()
 
 	Menu:addSubMenu("Orbwalking", "Orbwalking")
 		SOWi:LoadToMenu(Menu.Orbwalking)
+
+	Menu:addSubMenu("Choose Target Selector", "SelectTS")
+		Menu.SelectTS:addParam("TS", "Select TS (Require reload)", SCRIPT_PARAM_LIST, 1, {"Use SimpleTS", "Use Selector"})
+
+	if (Menu.SelectTS.TS == 1) or ForceUseSimpleTS then
+		STS = SimpleTS(STS_PRIORITY_LESS_CAST_MAGIC)
+		Menu:addSubMenu("Set Target Selector Priority", "STS")
+		STS:AddToMenu(Menu.STS)
+	else
+		Selector.Instance() 
+	end
 
 	Menu:addSubMenu("Combo", "Combo")
 		Menu.Combo:addParam("UseQ", "Use Q", SCRIPT_PARAM_ONOFF, true)
@@ -496,9 +507,20 @@ end
 
 function UseSpells(UseQ, UseW, UseE, UseEQ, UseR)
 
-	local Qtarget = Selector.GetTarget(SelectorMenu.Get().mode, 'AP', {distance = W.range})
-	local QEtarget = Selector.GetTarget(SelectorMenu.Get().mode, 'AP', {distance = QERange})
-	local Rtarget = Selector.GetTarget(SelectorMenu.Get().mode, 'AP', {distance = R.range})
+	local Qtarget
+	local QEtarget
+	local Rtarget
+
+	if STS == nil
+		Qtarget = Selector.GetTarget(SelectorMenu.Get().mode, 'AP', {distance = W.range})
+		QEtarget = Selector.GetTarget(SelectorMenu.Get().mode, 'AP', {distance = QERange})
+		Rtarget = Selector.GetTarget(SelectorMenu.Get().mode, 'AP', {distance = R.range})
+	else
+		Qtarget = STS:GetTarget(W.range)
+		QEtarget = STS:GetTarget(QERange)
+		Rtarget = STS:GetTarget(R.range)
+	end 
+
 	local DFGUsed = false
 
 	if (os.clock() - DontUseRTime < 10) then
