@@ -1,6 +1,6 @@
 if myHero.charName ~= "Syndra" then return end
 
-local version = 1.03
+local version = 1.04
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Syndra"
 local ForceUseSimpleTS = false
@@ -511,7 +511,7 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR)
 	local QEtarget
 	local Rtarget
 
-	if STS == nil
+	if STS == nil then
 		Qtarget = Selector.GetTarget(SelectorMenu.Get().mode, 'AP', {distance = W.range})
 		QEtarget = Selector.GetTarget(SelectorMenu.Get().mode, 'AP', {distance = QERange})
 		Rtarget = Selector.GetTarget(SelectorMenu.Get().mode, 'AP', {distance = R.range})
